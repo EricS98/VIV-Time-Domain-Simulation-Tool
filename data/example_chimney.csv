@@ -1,0 +1,5 @@
+# data/example_chimney.csv
+# Example structure from Lupi et al. (2019)
+# Units: height[m], D[m], f_n[Hz], m_eq[kg/m], delta_s[-], cross_section_variation[-], diameter_base[m], taper_height[m], measured_y_d [-]
+name,height,diameter,f_n,m_eq,delta_s,cross_section_variation,diameter_base, taper_height,measured_y_d
+Lupi_2019,40.0,0.813,0.5,262.326,0.01,constant

@@ -1,0 +1,32 @@
+# Units: height[m], diameter[m], f_n[Hz], m_eq[kg/m], delta_s[-], cross_section_variation[-], diameter_base[m], taper_height[m], measured_y_d [-], measured_y_d_rare [-]
+name,height,diameter,f_n,m_eq,delta_s,cross_section_variation,diameter_base,taper_height,measured_y_d,measured_y_d_rare
+Mitzuschima,90.0,4.50,0.75,2090,0.0314,linear,7.20,,0.062,
+Chiba,91.5,4.38,0.68,2010,0.0280,linear,6.92,,0.057,
+Wakayama,83.0,3.20,1.15,1360,0.0377,linear,6.40,,0.063,
+TNO,60.0,1.58,0.50,233,0.0150,constant,,,0.250,
+TNO modified,60.0,1.00,1.375,148,0.0130,base_taper,1.60,36.0,0.400,
+UK,55.0,2.14,1.12,323,0.0150,base_taper,3.68,17.0,0.180,
+Himmelev,45.0,1.26,0.642,341,0.0480,constant,,,0.013,
+Nykobing,50.0,2.20,0.919,945,0.0140,constant,,,0.016,
+Skjern,45.0,1.10,0.629,258,0.0340,constant,,,0.025,
+Brovst,54.0,2.20,0.61,834,0.0590,constant,,,0.012,
+Thyboron,64.0,2.80,0.578,1085,0.0140,constant,,,0.035,0.357
+Aarhus,56.0,2.20,0.62,593,0.0300,constant,,,,0.227
+Odense,75.0,2.40,0.37,490,0.0300,constant,,,,0.417
+Herning,56.0,1.80,0.49,386,0.0250,constant,,,,0.278
+Distillation column,80.0,3.96,0.53,5090,0.0160,constant,,,0.174,
+Pirna,60.0,2.00,0.802,340,0.0120,constant,,,0.280,
+Pirna (damper),60.0,2.00,0.770,344,0.125,constant,,,0.025,
+RWTH 1,28.0,0.914,1.72,89,0.0150,constant,,,0.153,
+Recklinghausen,38.0,1.016,0.68,230,0.0300,constant,,,0.073,
+Example-1,52.0,2.00,0.75,340,0.0120,constant,,,0.250,
+Thyssen,120.0,4.90,0.49,2418,0.0180,constant,,,0.122,
+Example-3,99.0,4.25,0.425,3057,0.0120,constant,,,0.089,
+RWTH 2,29.0,1.016,1.30,328,0.0170,constant,,,0.070,
+Duisburg,140.0,6.00,0.51,1440,0.0300,constant,,,0.200,
+Pittsburgh,76.2,2.62,0.55,535,0.0150,constant,,,0.290,
+Cypern,100.0,6.00,0.61,1639,0.0420,constant,,,0.133,
+Varberg,35.0,0.728,0.52,155,0.0300,constant,,,0.124,
+Rusch-1984,59.25,2.85,0.73,1145,0.0340,constant,,,0.053,
+D8,116.5,4.2,0.59,3875,0.0300,top_taper,6.00,36.5,0.024,
+Bouin Chimney,35.5,2.00,0.78,323,0.0140,constant,,,0.350,
