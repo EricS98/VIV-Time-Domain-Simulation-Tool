@@ -66,7 +66,10 @@ Follow the prompts to:
 3. Configure analysis parameters
 4. Choose analysis type (spectral, time-domain, or both)
 
-### Command-Line Mode
+### Command-Line Mode (Experimental)
+
+**Note**: Command-line mode is currently experimental and may have limitations. 
+For production use, please use the interactive mode.
 
 Analyze a structure directly from the command line:
 ```bash
@@ -279,6 +282,15 @@ RWTH Aachen University
 - [Dr.-Ing. Robert Fontecha]
 
 **Contact:** eric.simon@rwth-aachen.de
+
+## License
+
+This software was developed as part of a Master's thesis at RWTH Aachen University.
+
+**Academic Use Only**: This code is provided for academic and research purposes. 
+Commercial use requires explicit written permission from the author.
+
+See [LICENSE](LICENSE) file for details.
 
 ---
 
