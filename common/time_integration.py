@@ -1,10 +1,9 @@
 # common/time_integration.py
 """
-Time Integration Module - Optimized for Generalized 1-DOF Systems
+Time Integration Module
 ================================================================
 
 Newmark-beta integration methods for VIV analysis of generalized SDOF systems.
-Removed inefficient "standard" method and optimized for scalar inputs.
 """
 
 import numpy as np
