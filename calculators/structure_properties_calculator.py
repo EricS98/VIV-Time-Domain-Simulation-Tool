@@ -5,6 +5,9 @@ Structure Properties Calculator
 
 Calculates derived properties that depend on configuration parameters
 like reference diameter and Strouhal number.
+
+References:
+- E. Simon, "Development and Application of a Time-Domain Simulation Tool for Spectral Modeling of Vortex-Induced Vibrations", Master's Thesis, RWTH Aachen, 2025.
 """
 
 import numpy as np
@@ -60,6 +63,7 @@ class StructurePropertiesCalculator:
         float
             Scruton number [-]
         """
+        # Simon (2025), Eq. 3.23
         return 2 * m_eq * delta_s / (self.rho_air * d**2)
     
     def calculate_critical_velocity(self, f_n: float, d: float, St: float) -> float:
@@ -82,6 +86,7 @@ class StructurePropertiesCalculator:
         float
             Critical velocity [m/s]
         """
+        # Simon (2025), Eq. 2.9
         return f_n * d / St
     
     def calculate_modal_mass(
