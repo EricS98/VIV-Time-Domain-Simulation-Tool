@@ -21,6 +21,9 @@ where:
     - ρ: Air density
     - U(z): Wind velocity at height z
     - d(z): Diameter at height z
+
+References:
+- E. Simon, "Development and Application of a Time-Domain Simulation Tool for Spectral Modeling of Vortex-Induced Vibrations", Master's Thesis, RWTH Aachen, 2025.
 """
 import numpy as np
 from typing import Union, Optional, Tuple
@@ -152,21 +155,25 @@ class LiftSpectrumCalculator(BaseCalculator):
         Iv = config.wind_profile.get_turbulence_intensity(z, h)
 
         # Calculate Reynolds number
+        # Simon (2025), Eq. 2.8
         Re = U * d / self.nu_air
         
         # Get aerodynamic parameters
         sigma_CL = config.lift_coefficient.get_sigma_cl(Re)
 
         # Bandwidth parameter (turbulence-dependent)
+        # Simon (2025), Eq. 3.5
         B = min(0.1 + Iv, 0.35)
         
         # Shedding frequency
+        # Simon (2025), Eq. 2.7b
         f_s = self.St * U / d
         
         # Calculate lift coefficient spectrum
         S_CL = self._calculate_S_CL(frequency, sigma_CL, B, f_s)
         
         # Calculate lift force spectrum
+        # Simon (2025), Eq. 3.8c
         force_scaling = (0.5 * self.rho_air * U**2 * d)**2
         S_L = force_scaling * S_CL
         
@@ -226,6 +233,7 @@ class LiftSpectrumCalculator(BaseCalculator):
                          for z in z_array])
         
         # Calculate Reynolds number at each height
+        # Simon (2025), Eq. 2.8
         Re_z = U_z * d_z / self.nu_air
 
         # Get aerodynamic parameters at each height
@@ -233,9 +241,11 @@ class LiftSpectrumCalculator(BaseCalculator):
                                for Re in Re_z])
         
         # Bandwidth parameter at each height
+        # Simon (2025), Eq. 3.5
         B_z = np.minimum(0.1 + Iv_z, 0.35)
 
         # Shedding frequency at each height
+        # Simon (2025), Eq. 2.7b
         f_s_z = self.St * U_z / d_z
 
         # Calculate spectra at each height
@@ -246,6 +256,7 @@ class LiftSpectrumCalculator(BaseCalculator):
             )
 
             # Lift force spectrum
+            # Simon (2025), Eq. 3.8c
             force_scaling = (0.5 * self.rho_air * U_z[i]**2 * d_z[i])**2
             S_L[i,:] = force_scaling * S_CL[i,:]
 
@@ -290,6 +301,10 @@ class LiftSpectrumCalculator(BaseCalculator):
         np.ndarray
             Lift coefficient spectrum [1/Hz]
         """
+        # ====================================
+        # Simon (2025), Eq. 3.3
+        # ====================================
+
         # Normalization factor
         normalization = sigma_CL**2 / (np.sqrt(np.pi) * B * f_s)
 
