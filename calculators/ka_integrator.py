@@ -8,6 +8,9 @@ Handles height-integrated aerodynamic damping parameter.
 IMPORTANT: Different handling for different damping models:
 - Vickery-Basu/Eurocode: Integrates Ka_max(Re) * Ka_norm(U/Ucr, Iv) → Returns Ka_r,n
 - Lupi DMSM: Integrates Ka_norm(U/Ucr, Iv) only → Returns K_a0,modal
+
+References:
+- E. Simon, "Development and Application of a Time-Domain Simulation Tool for Spectral Modeling of Vortex-Induced Vibrations", Master's Thesis, RWTH Aachen, 2025.
 """
 
 import numpy as np
@@ -138,6 +141,8 @@ class KaHeightIntegrator:
             )
 
         # 2) Compute integrals
+        # Simon (2025), Eq. 3.45
+
         # Numerator: ∫₀ʰ K_a0(z) * d²(z) * φ_n²(z) dz
         integrand_Ka0 = K_a0_z * (d_z**2) * (phi_z**2)
         numerator = np.trapezoid(integrand_Ka0, z_points)
@@ -159,7 +164,6 @@ class KaHeightIntegrator:
             return K_a0_modal
     
         # For VickeryBasu/Eurocode: integrate Ka_max separately and multiply
-        # Note: This could be improved by integrating Ka_max * K_a0 directly
         Ka_integrand = Ka_max_z * K_a0_z * d_z**2 * phi_z**2
         Ka_r_n = np.trapezoid(Ka_integrand, z_points) / denominator
 
