@@ -4,6 +4,12 @@ Vortex-Resonance Model Analysis
 ===============================
 
 Calculation of vortex-induced vibrations using the vortex-resonance model.
+
+References:
+- H. Ruscheweyh, "Vortex Excited Vibrations" in Wind-Excited Vibrations of Structures, pages 51-84, 1994.
+- H. Ruscheweyh, "Ein verfeinertes, praxisnahes Berechnungsverfahren wirbelerregter Schwingungen von schlanken Baukonstruktionen im Wind" in Beiträge zur Anwendung der Aeroelastik im Bauwesen, 1987.
+- DIN EN 1991-1-4:2010-12, Eurocode 1: Einwirkungen auf Tragwerke - Teil 1-4: Allgemeine Einwirkungen - Windlasten.
+- M. Clobes, A. Willecke, and U. Peil, "Wirbelerregung von Stahlschornsteinen: Zwei Grenzzustände der Tragfähigkeit und Vorschlag für die Bemessung" in Bauingenieur 87, 2012.
 """
 
 import numpy as np
@@ -115,6 +121,7 @@ class VortexResonanceCalculator(BaseCalculator):
             If None, uses the calculated Kw with 0.6 limit
         """
         super().__init__(St=St, rho_air=rho_air, nu_air=nu_air)
+        # Clobes et al. (2012) extension for stable atmospheric conditions
         self.use_willecke_peil = use_willecke_peil
         self.manual_kw = manual_kw
 
@@ -136,7 +143,7 @@ class VortexResonanceCalculator(BaseCalculator):
         if Re <= 0:
             raise ValueError("Reynolds number must be positive.")
         
-        # Eurocode/CICIND curve
+        # Eurocode curve (Ruscheweyh (1994), Fig. 2.4; Eurocode 1-4 (2010), Fig. E.2)
         if Re <= 3e5:
             return 0.70
         elif Re <= 5e5:
@@ -176,6 +183,7 @@ class VortexResonanceCalculator(BaseCalculator):
             return 1.0
 
         # Ruscheweyh (1994), Eq. 2.21
+        # Applicable for cantilever in 1st mode
         kw = 3 * le_ar_ratio * (1 - le_ar_ratio + (1/3) * le_ar_ratio**2)
 
         # Apply upper theshold of 0.6
@@ -200,6 +208,7 @@ class VortexResonanceCalculator(BaseCalculator):
         
         if self.use_willecke_peil:
             # Willecke-Peil extension for stable atmospheric conditions
+            # Clobes et al. (2012), Tab. 1
             if y_d <= 0.05:
                 return 12.0
             elif y_d >= 0.20:
@@ -209,6 +218,8 @@ class VortexResonanceCalculator(BaseCalculator):
                 return 12.0 + (30.0 - 12.0) * (y_d - 0.05) / (0.20 - 0.05)
         
         else:
+            # Standard Ruscheweyh correlation
+            # Ruscheweyh (1994), Tab. 2.1, Eq. 2.16
             if y_d <= 0.1:
                 return 6.0
             elif y_d < 0.6:
@@ -275,6 +286,7 @@ class VortexResonanceCalculator(BaseCalculator):
         if self.manual_kw is not None:
             # No iteration needed - direct calculation
             Kw = self.manual_kw
+            # Ruscheweyh (1994), Eq. 2.17
             y_d = (K_xi * Kw * c_lat) / (Sc * St**2)
             Le_d = self.get_effective_correlation_length(y_d)
             print(f"ℹ️  Using manual Kw = {Kw:.3f} (no iteration needed)")
