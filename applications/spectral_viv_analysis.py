@@ -470,17 +470,18 @@ class SpectralVIVAnalysis:
             import traceback
             traceback.print_exc()
 
-    def generate_latex_table(structures, fd_results_list, output_dir: Optional[Path] = None):
+    @staticmethod
+    def generate_latex_table(structures, results_list, output_dir: Optional[Path] = None):
         """
-        Generate LaTeX table for spectral VIV results (frequency domain).
+        Generate LaTeX table for spectral VIV results (frequency and time domain).
 
         Parameters
         ----------
         structures : list[StructureProperties]
-            List of structures in the same order as fd_results_list
-        fd_results_list : list[dict]
-            List of results dicts returned by run_complete_analysis
-            with analysis_type='frequency_domain'
+            List of structures in the same order as results_list
+        results_list : list[dict]
+            List of results dicts returned by _run_multi_structure_spectral
+            Each dict contains 'frequency' and/or 'time' keys with analysis results
         output_dir : Path, optional
             Directory where the .tex file will be written
         """
@@ -488,62 +489,113 @@ class SpectralVIVAnalysis:
             print("⚠️ No output directory provided for LaTeX table")
             return
 
-        if not fd_results_list:
-            print("⚠️ No frequency-domain results to generate LaTeX table")
+        if not results_list:
+            print("⚠️ No results to generate LaTeX table")
             return
 
         latex_lines = []
-        latex_lines.append(r"\begin{table}[htbp]")
-        latex_lines.append(r"  \centering")
-        latex_lines.append(r"  \caption{Spectral VIV analysis results}")
-        latex_lines.append(r"  \label{tab:spectral_viv_results}")
-        latex_lines.append(r"  \begin{tabular}{l c c c c}")
+    
+        # Start with longtable environment for multi-page support
+        latex_lines.append(r"\begin{scriptsize}")
+        latex_lines.append(r"  \begin{longtable}{r c c c c c c c c}")
+    
+        # Caption and label
+        latex_lines.append(r"  \caption{Spectral VIV Analysis Results (Frequency and Time Domain)}%")
+        latex_lines.append(r"  \label{tab:spectral_viv_results}\\")
+    
+        # First page header
         latex_lines.append(r"    \toprule")
-        latex_lines.append(
-            r"    Structure & $\sigma_y/d$ & $y_{\max}/d$ & $(y/d)_\text{meas}$ & Rel.\ error [\%] \\"
-        )
+        latex_lines.append(r"    No. & Sc & \multicolumn{3}{c}{Frequency Domain} & \multicolumn{3}{c}{Time Domain} \\")
+        latex_lines.append(r"    \cmidrule(lr){3-5} \cmidrule(lr){6-8}")
+        latex_lines.append(r"    & [-] & $\sigma_y/d$ & $k_p$ & $y_{\max}/d$ & $\sigma_y/d$ & $k_p$ & $y_{\max}/d$ \\")
+        latex_lines.append(r"    & & [-] & [-] & [-] & [-] & [-] & [-] \\")
         latex_lines.append(r"    \midrule")
+        latex_lines.append(r"    \endfirsthead")
+    
+        # Continuation header
+        latex_lines.append(r"    ")
+        latex_lines.append(r"    \toprule")
+        latex_lines.append(r"    \multicolumn{8}{l}{\small\itshape Table \ref{tab:spectral_viv_results} (continued)}\\")
+        latex_lines.append(r"    \toprule")
+        latex_lines.append(r"    No. & Sc & \multicolumn{3}{c}{Frequency Domain} & \multicolumn{3}{c}{Time Domain} \\")
+        latex_lines.append(r"    \cmidrule(lr){3-5} \cmidrule(lr){6-8}")
+        latex_lines.append(r"    & [-] & $\sigma_y/d$ & $k_p$ & $y_{\max}/d$ & $\sigma_y/d$ & $k_p$ & $y_{\max}/d$ \\")
+        latex_lines.append(r"    & & [-] & [-] & [-] & [-] & [-] & [-] \\")
+        latex_lines.append(r"    \midrule")
+        latex_lines.append(r"    \endhead")
+    
+        # Footer
+        latex_lines.append(r"    ")
+        latex_lines.append(r"    \bottomrule")
+        latex_lines.append(r"    \endfoot")
+        latex_lines.append(r"    ")
 
-        for structure, fd_result in zip(structures, fd_results_list):
-            if fd_result is None:
+        # Data rows
+        for idx, (structure, result_dict) in enumerate(zip(structures, results_list), start=1):
+            if result_dict is None:
                 continue
 
-            response = fd_result['response']
             d = structure.diameter
-
-            # Calculate normalized responses
-            sigma_over_d = response.sigma_y / d
-            ymax_over_d = response.y_max / d
-
-            meas_freq = getattr(structure, "measured_y_d", None)
-            meas_rare = getattr(structure, "measured_y_d_rare", None)
-
-            # Format frequent event measurement
-            meas_freq_str = f"{meas_freq:.4f}" if (meas_freq is not None and meas_freq > 0) else r"-"
         
-            # Format rare event measurement
-            meas_rare_str = f"{meas_rare:.4f}" if (meas_rare is not None and meas_rare > 0) else r"-"
-
-            # Calculate error based on frequent event (if available)
-            if meas_freq is not None and meas_freq > 0:
-                rel_err = 100.0 * (sigma_over_d - meas_freq) / meas_freq
-                err_str = f"{rel_err:.1f}"
+            # Extract frequency-domain results
+            fd_result = result_dict.get('frequency')
+            if fd_result and 'response' in fd_result and fd_result['response'] is not None:
+                fd_response = fd_result['response']
+                Sc = fd_response.Scruton_number
+                sigma_fd = fd_response.sigma_y / d
+                g_fd = fd_response.peak_factor
+                ymax_fd = fd_response.y_max / d
+            
+                fd_sigma_str = f"{sigma_fd:.4f}"
+                fd_g_str = f"{g_fd:.2f}"
+                fd_ymax_str = f"{ymax_fd:.4f}"
             else:
-                err_str = r"-"
-
+                Sc = getattr(structure, 'Scruton_number', None)
+                if Sc is None:
+                    # Calculate Sc if not available
+                    Sc = (4 * np.pi * structure.m_eq * structure.delta_s) / (structure.rho * structure.diameter**2)
+                fd_sigma_str = r"-"
+                fd_g_str = r"-"
+                fd_ymax_str = r"-"
+        
+            # Extract time-domain results
+            td_result = result_dict.get('time')
+            if td_result and 'time_domain' in td_result and td_result['time_domain'] is not None:
+                td_response = td_result['time_domain']
+                sigma_td = td_response.sigma_y / d
+                g_td = td_response.peak_factor
+                ymax_td = td_response.y_max / d
+            
+                td_sigma_str = f"{sigma_td:.4f}"
+                td_g_str = f"{g_td:.2f}"
+                td_ymax_str = f"{ymax_td:.4f}"
+            else:
+                td_sigma_str = r"-"
+                td_g_str = r"-"
+                td_ymax_str = r"-"
+        
+            # Format Scruton number
+            Sc_str = f"{Sc:.2f}" if Sc is not None else r"-"
+        
             latex_lines.append(
-                f"    {structure.name} & "
-                f"{sigma_over_d:.4f} & "
-                f"{ymax_over_d:.4f} & "
-                f"{meas_freq_str} & "
-                f"{meas_rare_str} & "
-                f"{err_str} \\\\"
+                f"    {idx} & "
+                f"{Sc_str} & "
+                f"{fd_sigma_str} & "
+                f"{fd_g_str} & "
+                f"{fd_ymax_str} & "
+                f"{td_sigma_str} & "
+                f"{td_g_str} & "
+                f"{td_ymax_str} \\\\"
             )
 
-        latex_lines.append(r"    \bottomrule")
-        latex_lines.append(r"  \end{tabular}")
-        latex_lines.append(r"\end{table}")
+        # End table
+        latex_lines.append(r"    ")
+        latex_lines.append(r"  \end{longtable}")
+        latex_lines.append(r"\vspace{2mm}")
+        latex_lines.append(r"\textit{FD: Frequency-domain analysis; TD: Time-domain simulation.}")
+        latex_lines.append(r"  \end{scriptsize}")
 
+        # Save to file
         output_file = Path(output_dir) / "spectral_viv_results_table.tex"
         with open(output_file, "w", encoding="utf-8") as f:
             f.write("\n".join(latex_lines))
