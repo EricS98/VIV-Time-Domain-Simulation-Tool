@@ -455,27 +455,43 @@ class RunAnalysis(InteractiveInputHelpers):
             self._generate_comparison_plots(structures, results, analysis_type='spectral')
 
         # Optional: generate LaTeX table (only if frequency-domain results exist)
-        if domain_type in ['frequency', 'both'] and results['frequency_domain']:
+        if domain_type in ['frequency', 'both'] and results['frequency_domain'] or \
+            (domain_type in ['time', 'both'] and results['time_domain']):
             from applications.spectral_viv_analysis import SpectralVIVAnalysis
 
             if self._yesno("\nGenerate LaTeX table from spectral results?", default=False):
-                fd_results = results['frequency_domain']
-                # nur Paare nehmen, bei denen wirklich ein response-Objekt existiert
+                # Combine frequency and time domain results for each structure
+                combined_results = []
                 structures_for_table = []
-                fd_results_for_table = []
-                for s, r in zip(structures, fd_results):
-                    if r and r.get('response') is not None:
-                        structures_for_table.append(s)
-                        fd_results_for_table.append(r)
+        
+                for i, structure in enumerate(structures):
+                    result_dict = {}
+
+                    # Add frequency-domain result if available
+                    if results['frequency_domain'] and i < len(results['frequency_domain']):
+                        fd_res = results['frequency_domain'][i]
+                        if fd_res and fd_res.get('response') is not None:
+                            result_dict['frequency'] = fd_res
+            
+                    # Add time-domain result if available
+                    if results['time_domain'] and i < len(results['time_domain']):
+                        td_res = results['time_domain'][i]
+                        if td_res and td_res.get('time_domain') is not None:
+                            result_dict['time'] = td_res
+            
+                    # Only include structures that have at least one valid result
+                    if result_dict:
+                        combined_results.append(result_dict)
+                        structures_for_table.append(structure)
 
                 if structures_for_table:
                     SpectralVIVAnalysis.generate_latex_table(
                         structures_for_table,
-                        fd_results_for_table,
+                        combined_results,
                         self.output_dir
                     )
                 else:
-                    print("⚠️ No valid frequency-domain results for LaTeX table.")
+                    print("⚠️ No valid results for LaTeX table.")
 
         print("\n✅ Multi-structure analysis completed!")
         print(f"Results saved to: {self.output_dir}")
@@ -637,7 +653,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
   # Interactive mode
-  python run_analysis.py
+  python scripts/run_analysis.py
   
   # Command line mode
   python run_analysis.py --csv data/structures.csv --structure "Chimney_1"
