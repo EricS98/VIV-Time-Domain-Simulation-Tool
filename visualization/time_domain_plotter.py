@@ -267,7 +267,7 @@ class TimeDomainResponsePlotter:
         Q_max = float(np.max(np.abs(Q)))
 
         # Create figure with 4 subplots (force + 4 response components)
-        fig = plt.figure(figsize=self.figsize_multi, dpi=self.dpi)
+        fig = plt.figure(figsize=(16,12), dpi=self.dpi)
         gs = GridSpec(4, 1, figure=fig, hspace=0.3)
 
         # 1. Generalized force
@@ -400,6 +400,10 @@ class TimeDomainResponsePlotter:
         zeta_a = history['zeta_aero']
         zeta_total = history['zeta_total']
 
+        # Get displacement time series
+        y = results.displacement
+        t_full = results.time
+
         # Apply time limit if requested
         if max_time is not None:
             mask = t <= max_time
@@ -408,6 +412,10 @@ class TimeDomainResponsePlotter:
             zeta_s = zeta_s[mask]
             zeta_a = zeta_a[mask]
             zeta_total = zeta_total[mask]
+
+            mask_full = t_full <= max_time
+            t_full = t_full[mask_full]
+            y = y[mask_full]
 
         # Steady-state / limit-cycle onset from time-domain statistics
         steady_start_index = getattr(results, "steady_start_index", 0)
@@ -421,11 +429,45 @@ class TimeDomainResponsePlotter:
         trimmed_periods = steady_start_time * results.natural_frequency
 
         # Create figure with 2 subplots
-        fig = plt.figure(figsize=self.figsize_multi, dpi=self.dpi)
-        gs = GridSpec(2, 1, figure=fig, hspace=0.35)
+        fig = plt.figure(figsize=(16,14), dpi=self.dpi)
+        gs = GridSpec(3, 1, figure=fig, hspace=0.35)
+
+        # 1. Displacement time history
+        ax0 = fig.add_subplot(gs[0, 0])
+
+        # Plot displacement
+        ax0.plot(t_full, y * 1000, color=self.colors['displacement'], 
+                linewidth=0.6, alpha=0.8, label='Displacement')
         
-        # 1. RMS displacement evolution
-        ax1 = fig.add_subplot(gs[0, 0])
+        # Add moving RMS envelope (matches subplot b)
+        ax0.plot(t, rms * 1000, color=self.colors['rms'], 
+                linewidth=1.5, alpha=0.8, linestyle='-', label='Running RMS', zorder=4)
+        ax0.plot(t, -rms * 1000, color=self.colors['rms'], 
+                linewidth=1.5, alpha=0.8, linestyle='-', zorder=4)
+        
+        # Add final steady-state RMS as subtle reference
+        ax0.axhline(results.sigma_y * 1000, color='k', linestyle=':', 
+                    linewidth=1.0, alpha=0.5, zorder=3)
+        ax0.axhline(-results.sigma_y * 1000, color='k', linestyle=':', 
+                    linewidth=1.0, alpha=0.5, zorder=3, 
+                    label=rf'$\sigma_y$ (steady) = {results.sigma_y*1000:.2f} mm')
+        
+        # Shade transient region if requested
+        if show_transient_detection:
+            ax0.axvspan(t_full[0], steady_start_time, alpha=0.12, color='gray', zorder=1)
+            ax0.axvline(steady_start_time, color='#C73E1D', linestyle='--',
+                        linewidth=1.5, alpha=0.85, zorder=2)
+        
+        ax0.set_ylabel('Displacement [mm]', fontsize=11)
+        ax0.set_title('(a) Displacement Time History', fontsize=11, loc='left', pad=8)
+        ax0.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+        ax0.minorticks_on()
+        ax0.grid(True, which='minor', alpha=0.1, linestyle=':', linewidth=0.3)
+        ax0.legend(loc='best', fontsize=8.5, framealpha=0.95, edgecolor='gray')
+        ax0.set_xlim([t_full[0], t_full[-1]])   
+        
+        # 2. RMS displacement evolution
+        ax1 = fig.add_subplot(gs[1, 0], sharex=ax0)
 
         # Plot instantaneous RMS
         ax1.plot(t, rms * 1000, color=self.colors['rms'], 
@@ -449,14 +491,14 @@ class TimeDomainResponsePlotter:
                     zorder=2)
         
         ax1.set_ylabel(r'RMS Displacement $\sigma_y$ [mm]', fontsize=11)
-        ax1.set_title('(a) RMS Displacement Evolution', fontsize=11, loc='left', pad=8)
+        ax1.set_title('(b) RMS Displacement Evolution', fontsize=11, loc='left', pad=8)
         ax1.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
         ax1.minorticks_on()
         ax1.grid(True, which='minor', alpha=0.1, linestyle=':', linewidth=0.3)
         ax1.legend(loc='best', fontsize=8.5, framealpha=0.95, edgecolor='gray')
         
         # 2. Damping ratio evolution
-        ax2 = fig.add_subplot(gs[1, 0])
+        ax2 = fig.add_subplot(gs[2, 0], sharex=ax0)
         
         ax2.plot(t, zeta_s * 100, color=self.colors['damping_struct'], 
                 linewidth=1.5, label='Structural $\zeta_s$', alpha=0.9)
@@ -467,7 +509,7 @@ class TimeDomainResponsePlotter:
         ax2.axhline(0, color='k', linestyle='-', linewidth=0.8, alpha=0.4)
         ax2.set_xlabel('Time [s]', fontsize=11)
         ax2.set_ylabel(r"Damping ratio $\zeta$ [%]", fontsize=11)
-        ax2.set_title("(b) Damping ratio evolution", fontsize=11, loc="left", pad=8)
+        ax2.set_title("(c) Damping ratio evolution", fontsize=11, loc="left", pad=8)
         ax2.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
         ax2.minorticks_on()
         ax2.grid(True, which="minor", alpha=0.1, linestyle=":", linewidth=0.3)
@@ -499,6 +541,169 @@ class TimeDomainResponsePlotter:
         else:
             plt.close(fig)
         
+        return fig
+    
+    def plot_displacement_interval(
+        self,
+        results,
+        t_start: float = 0.0,
+        t_end: Optional[float] = None,
+        show_rms: bool = True,
+        show_statistics_box: bool = True,
+        show_plot: bool = True,
+        save_path: Optional[Path] = None
+    ) -> Optional[Figure]:
+        """
+        Create thesis-ready displacement plot for a specified time interval.
+    
+        Clean, publication-quality plot showing only displacement time series
+        with statistics displayed in millimeters.
+    
+        Parameters:
+        -----------
+        results : TimeDomainResults
+            Time-domain response results
+        t_start : float
+            Start time of interval [s] (default: 0.0)
+        t_end : float, optional
+            End time of interval [s] (default: None = full duration)
+        show_rms : bool
+            If True, show RMS envelope lines (default: True)
+        show_statistics_box : bool
+            If True, show statistics text box (default: True)
+        show_plot : bool
+            If True, display the plot interactively
+        save_path : Path, optional
+            If provided, save figure to this path
+        
+        Returns:
+        --------
+        Figure or None
+        """
+        # Get time and displacement data
+        t = results.time
+        y = results.displacement
+    
+        # Apply time interval limits
+        if t_end is None:
+            t_end = t[-1]
+    
+        # Create mask for time interval
+        mask = (t >= t_start) & (t <= t_end)
+        t_plot = t[mask]
+        y_plot = y[mask]
+    
+        # Convert displacement to mm
+        y_plot_mm = y_plot * 1000
+    
+        # Get statistics (in mm)
+        sigma_y_mm = results.sigma_y * 1000
+        y_max_mm = results.y_max * 1000
+        y_min_mm = results.y_min * 1000
+        peak_factor = results.peak_factor
+    
+        # Create figure
+        fig, ax = plt.subplots(1, 1, figsize=self.figsize_single, dpi=self.dpi)
+    
+        # Plot displacement
+        ax.plot(t_plot, y_plot_mm, 
+                color=self.colors['displacement'], 
+                linewidth=0.8, 
+                alpha=0.85,
+                label='Displacement')
+    
+        # Add RMS envelope if requested
+        if show_rms:
+            ax.axhline(sigma_y_mm, 
+                    color='#E74C3C', 
+                    linestyle='--',
+                    linewidth=1.5, 
+                    alpha=0.7, 
+                    label=f'RMS = {sigma_y_mm:.2f} mm')
+            ax.axhline(-sigma_y_mm, 
+                    color='#E74C3C', 
+                    linestyle='--',
+                    linewidth=1.5, 
+                    alpha=0.7)
+        
+            # Add maximum response line
+            ax.axhline(y_max_mm, 
+                    color='#C73E1D', 
+                    linestyle=':', 
+                    linewidth=1.2, 
+                    alpha=0.6,
+                    label=f'Max = {y_max_mm:.2f} mm')
+    
+        # Labels and title
+        ax.set_xlabel('Time [s]', fontsize=12)
+        ax.set_ylabel('Displacement [mm]', fontsize=12)
+        ax.set_title('Cross-Wind Displacement Response', fontsize=13, fontweight='bold', pad=12)
+    
+        # Grid
+        ax.grid(True, alpha=0.3, linestyle=':', linewidth=0.6)
+        ax.minorticks_on()
+        ax.grid(True, which='minor', alpha=0.15, linestyle=':', linewidth=0.4)
+    
+        # Set x-limits
+        ax.set_xlim([t_start, t_end])
+    
+        # Legend
+        ax.legend(loc='upper right', fontsize=10, framealpha=0.95, edgecolor='gray')
+    
+        # Statistics box if requested
+        if show_statistics_box:
+            # Calculate duration and number of samples
+            duration = t_end - t_start
+            n_samples = len(y_plot)
+        
+            # Determine steady-state information
+            if hasattr(results, 'steady_start_time') and results.steady_start_time > 0:
+                steady_time = results.steady_start_time
+                steady_periods = steady_time * results.natural_frequency
+                trim_text = f"Trimmed: {steady_time:.0f} s ({steady_periods:.0f} periods)"
+            else:
+                trim_text = "No transient trimming"
+        
+            stats_text = (
+                f"Statistics (Steady-State)\n"
+                f"{'─'*28}\n"
+                f"Duration:  {duration:.0f} s\n"
+                f"Samples:   {n_samples:,}\n"
+                f"{trim_text}\n"
+                f"\n"
+                f"Response Metrics\n"
+                f"{'─'*28}\n"
+                f"σ_y     = {sigma_y_mm:.2f} mm\n"
+                f"y_max   = {y_max_mm:.2f} mm\n"
+                f"y_min   = {y_min_mm:.2f} mm\n"
+                f"k_p     = {peak_factor:.3f}"
+            )
+        
+            # Add text box
+            ax.text(0.02, 0.98, stats_text,
+                    transform=ax.transAxes,
+                    verticalalignment='top',
+                    fontsize=9,
+                    fontfamily='monospace',
+                    bbox=dict(boxstyle='round,pad=0.8',
+                            facecolor='white',
+                            edgecolor='gray',
+                            alpha=0.95,
+                            linewidth=1.2))
+    
+        plt.tight_layout()
+    
+        # Save if requested
+        if save_path:
+            fig.savefig(save_path, dpi=self.dpi, bbox_inches='tight')
+            print(f"✅ Displacement interval plot saved to: {save_path}")
+    
+        # Show if requested
+        if show_plot:
+            plt.show()
+        else:
+            plt.close(fig)
+    
         return fig
     
     def plot_comparison_with_frequency_domain(
@@ -895,6 +1100,20 @@ class TimeDomainResponsePlotter:
         )
         if path:
             saved_paths['pdf_analysis'] = path
+
+        if td_results is not None:
+            path = self._create_filename("displacement_series.png", output_dir) if save_plots else None
+            self.plot_displacement_interval(
+                td_results,
+                t_start=0,
+                t_end=1500,
+                show_rms=True,
+                show_statistics_box=True,
+                show_plot=False,
+                save_path=path
+            )
+            if path:
+                saved_paths['displacement'] = path
         
         # 6. Comparison with frequency domain (if available)
         #if fd_results is not None:
