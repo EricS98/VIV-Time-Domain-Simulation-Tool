@@ -1,4 +1,10 @@
 # calculators/base_calculator.py
+"""
+Base class for VIV calculators with shared constants and methods.
+
+References:
+- F. Lupi, "Structural Oscillations of High Chimneys due to Gusts and Vortex Shedding", 2019.
+"""
 
 import numpy as np
 
@@ -33,6 +39,7 @@ class BaseCalculator:
         float
             Bandwidth parameter B [-]
         """
+        # Lupi (2019), Eq. 6.45
         return min(0.1 + Iv, 0.35)
 
     def calculate_peak_factor(
@@ -59,6 +66,7 @@ class BaseCalculator:
         """
         if formula == "cicind":
             # CICIND/Eurocode formula
+            # Lupi (2019), Eq. 6.84
             kp = np.sqrt(2) * (1 + 1.2 * np.arctan(0.75 * sc_over_4pi_ka**4))
 
         else:
