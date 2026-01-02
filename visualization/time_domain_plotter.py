@@ -901,7 +901,7 @@ class TimeDomainResponsePlotter:
         y_steady = y[n_skip:]
 
         # Calculate statistics
-        pdf_stats = calculate_pdf_statistics(y, trim_fraction=0.0)
+        pdf_stats = calculate_pdf_statistics(y_steady, trim_fraction=0.0)
 
         # Normalize data
         y_normalized = calculate_normalized_data(y_steady)
