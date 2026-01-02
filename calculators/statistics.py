@@ -96,7 +96,7 @@ def calculate_normalized_data(data: np.ndarray) -> np.ndarray:
     std = np.std(data)
 
     if std < 1e-10:
-        np.zeros_like(data)
+        return np.zeros_like(data)
 
     return (data - mean) / std
 
