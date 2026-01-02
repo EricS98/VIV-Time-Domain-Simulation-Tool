@@ -5,3 +5,6 @@ pandas>=2.0.0
 
 # Visualization
 matplotlib>=3.6.0
+
+# Excel reporting
+openpyxl>=3.1.0
