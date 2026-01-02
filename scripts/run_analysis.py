@@ -24,6 +24,7 @@ from common.analysis_config_helpers import(
     get_analysis_params_interactive,
     print_results_summary
 )
+from reporting.excel import export_single_summary_xlsx, export_multiple_summary_xlsx
 
 # Optional file picker
 try:
@@ -204,6 +205,24 @@ class RunAnalysis(InteractiveInputHelpers):
                     print_results_summary(results)
             else:   # Command line mode - always show
                 print_results_summary(results)
+
+            # Export Excel summary
+            try:
+                structure_results = {
+                    "frequency": {"response": results.get("response")} if results.get("response") is not None else None,
+                    "time": {"time_domain": results.get("time_domain")} if results.get("time_domain") is not None else None,
+                }
+
+                output_excel = self.output_dir / f"spectral_{self.structure.name}_summary.xlsx"
+                export_single_summary_xlsx(
+                    output_path=output_excel,
+                    structure=self.structure,
+                    config=config,
+                    result=structure_results,
+                )
+                print(f"✅ Excel summary saved: {output_excel.name}")
+            except Exception as ee:
+                print(f"⚠️  Excel export failed: {ee}")
 
         except Exception as e:
             print(f"\n❌ Analysis failed: {e}")
@@ -492,6 +511,19 @@ class RunAnalysis(InteractiveInputHelpers):
                     )
                 else:
                     print("⚠️ No valid results for LaTeX table.")
+
+        # Step 8: Export Excel summary
+        try:
+            output_excel = self.output_dir / "spectral_summary_all.xlsx"
+            export_multiple_summary_xlsx(
+                output_path=output_excel,
+                structures=structures,
+                template_config=template_config,
+                results=results,
+            )
+            print(f"✅ Excel summary saved: {output_excel.name}")
+        except Exception as ee:
+            print(f"⚠️  Excel export failed: {ee}")
 
         print("\n✅ Multi-structure analysis completed!")
         print(f"Results saved to: {self.output_dir}")
